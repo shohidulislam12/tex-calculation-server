@@ -1,12 +1,28 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:5173",  // Allow local frontend (development)
+  "https://tex-calculation-app.vercel.app" // Allow deployed frontend
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS Policy Blocked This Request"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 const port = process.env.PORT || 3000;
 app.use(express.json());
 const dotenv = require('dotenv');
 dotenv.config();
-const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
@@ -21,17 +37,10 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-  await client.connect();
+  //await client.connect();
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     const texcollection= client.db('JobPortal').collection('tex-calculate');
-//jwt 
-app.post('/jwt',async(req,res)=>{
-  const useremail=req.body
-  console.log(useremail)
-  const token=jwt.sign(useremail, process.env.ACESS_TOKEN_SECRET, { expiresIn: '365d' });
-  res.send({ token });
-})
 
 app.post('/calculate',async(req,res)=>{
   const { annualincome, investment, deduction, otherincome}=req.body
